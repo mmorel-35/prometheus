@@ -2973,9 +2973,9 @@ func assertAPIError(t *testing.T, got *apiError, exp errorType) {
 	t.Helper()
 
 	if exp == errorNone {
-		require.NoError(t, got)
+		require.NoError(t, got.err)
 	} else {
-		require.Error(t, got)
+		require.Error(t, got.err)
 		require.Equal(t, exp, got.typ, "(%q)", got)
 	}
 }

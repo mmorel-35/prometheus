@@ -92,6 +92,10 @@ func (e *apiError) Error() string {
 	return fmt.Sprintf("%s: %s", e.typ, e.err)
 }
 
+func (e *apiError) Unwrap() error {
+	return e.err
+}
+
 // ScrapePoolsRetriever provide the list of all scrape pools.
 type ScrapePoolsRetriever interface {
 	ScrapePools() []string

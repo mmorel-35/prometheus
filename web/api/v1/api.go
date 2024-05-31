@@ -92,6 +92,10 @@ func (e *apiError) Error() string {
 	return fmt.Sprintf("%s: %s", e.typ, e.err)
 }
 
+func (e *apiError) Unwrap() error {
+	return e.err
+}
+
 // ScrapePoolsRetriever provide the list of all scrape pools.
 type ScrapePoolsRetriever interface {
 	ScrapePools() []string
@@ -312,8 +316,13 @@ func (api *API) ClearCodecs() {
 }
 
 func setUnavailStatusOnTSDBNotReady(r apiFuncResult) apiFuncResult {
-	if r.err != nil && errors.Is(r.err.err, tsdb.ErrNotReady) {
-		r.err.typ = errorUnavailable
+	if r.err != nil {
+		var apiErr *apiError
+		errors.As(r.err, &apiErr)
+		if errors.Is(apiErr.err, tsdb.ErrNotReady) {
+			apiErr.typ = errorUnavailable
+			r.err = apiErr
+		}
 	}
 	return r
 }

@@ -2969,15 +2969,15 @@ func describeAPIFunc(f apiFunc) string {
 	return strings.Split(name[strings.LastIndex(name, ".")+1:], "-")[0]
 }
 
-func assertAPIError(t *testing.T, got *apiError, exp errorType) {
+func assertAPIError(t *testing.T, err error, exp errorType) {
 	t.Helper()
 
 	if exp == errorNone {
-		//nolint:testifylint
-		require.Nil(t, got)
+		require.NoError(t, err)
 	} else {
-		//nolint:testifylint
-		require.NotNil(t, got)
+		require.Error(t, err)
+		var got *apiError
+		errors.As(err, &got)
 		require.Equal(t, exp, got.typ, "(%q)", got)
 	}
 }

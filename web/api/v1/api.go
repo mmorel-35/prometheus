@@ -167,12 +167,11 @@ type Response struct {
 
 type apiFuncResult struct {
 	data      interface{}
-	err       *apiError
 	warnings  annotations.Annotations
 	finalizer func()
 }
 
-type apiFunc func(r *http.Request) apiFuncResult
+type apiFunc func(r *http.Request) (apiFuncResult, error)
 
 // TSDBAdminStats defines the tsdb interfaces used by the v1 API for admin operations as well as statistics.
 type TSDBAdminStats interface {
@@ -348,9 +347,9 @@ func (api *API) Register(r *route.Router) {
 	}
 
 	wrapAgent := func(f apiFunc) http.HandlerFunc {
-		return wrap(func(r *http.Request) apiFuncResult {
+		return wrap(func(r *http.Request) (apiFuncResult, error) {
 			if api.isAgent {
-				return apiFuncResult{nil, &apiError{errorExec, errors.New("unavailable with Prometheus Agent")}, nil, nil}
+				return apiFuncResult{nil, nil, nil}, &apiError{errorExec, errors.New("unavailable with Prometheus Agent")}
 			}
 			return f(r)
 		})
@@ -412,17 +411,17 @@ type QueryData struct {
 	Stats      stats.QueryStats `json:"stats,omitempty"`
 }
 
-func invalidParamError(err error, parameter string) apiFuncResult {
-	return apiFuncResult{nil, &apiError{
+func invalidParamError(err error, parameter string) (apiFuncResult, error) {
+	return apiFuncResult{nil, nil, nil}, &apiError{
 		errorBadData, fmt.Errorf("invalid parameter %q: %w", parameter, err),
-	}, nil, nil}
+	}
 }
 
-func (api *API) options(*http.Request) apiFuncResult {
-	return apiFuncResult{nil, nil, nil, nil}
+func (api *API) options(*http.Request) (apiFuncResult, error) {
+	return apiFuncResult{nil, nil, nil}, nil
 }
 
-func (api *API) query(r *http.Request) (result apiFuncResult) {
+func (api *API) query(r *http.Request) (result apiFuncResult, error) {
 	ts, err := parseTimeParam(r, "time", api.now())
 	if err != nil {
 		return invalidParamError(err, "time")
@@ -461,7 +460,7 @@ func (api *API) query(r *http.Request) (result apiFuncResult) {
 
 	res := qry.Exec(ctx)
 	if res.Err != nil {
-		return apiFuncResult{nil, returnAPIError(res.Err), res.Warnings, qry.Close}
+		return apiFuncResult{nil, res.Warnings, qry.Close}, returnAPIError(res.Err)
 	}
 
 	// Optional stats field in response if parameter "stats" is not empty.
@@ -478,13 +477,13 @@ func (api *API) query(r *http.Request) (result apiFuncResult) {
 	}, nil, res.Warnings, qry.Close}
 }
 
-func (api *API) formatQuery(r *http.Request) (result apiFuncResult) {
+func (api *API) formatQuery(r *http.Request) (result apiFuncResult, error) {
 	expr, err := parser.ParseExpr(r.FormValue("query"))
 	if err != nil {
 		return invalidParamError(err, "query")
 	}
 
-	return apiFuncResult{expr.Pretty(0), nil, nil, nil}
+	return apiFuncResult{expr.Pretty(0), nil, nil}, nil
 }
 
 func extractQueryOpts(r *http.Request) (promql.QueryOpts, error) {
@@ -501,7 +500,7 @@ func extractQueryOpts(r *http.Request) (promql.QueryOpts, error) {
 	return promql.NewPrometheusQueryOpts(r.FormValue("stats") == "all", duration), nil
 }
 
-func (api *API) queryRange(r *http.Request) (result apiFuncResult) {
+func (api *API) queryRange(r *http.Request) (result apiFuncResult, error) {
 	start, err := parseTime(r.FormValue("start"))
 	if err != nil {
 		return invalidParamError(err, "start")
@@ -527,7 +526,7 @@ func (api *API) queryRange(r *http.Request) (result apiFuncResult) {
 	// This is sufficient for 60s resolution for a week or 1h resolution for a year.
 	if end.Sub(start)/step > 11000 {
 		err := errors.New("exceeded maximum resolution of 11,000 points per timeseries. Try decreasing the query resolution (?step=XX)")
-		return apiFuncResult{nil, &apiError{errorBadData, err}, nil, nil}
+		return apiFuncResult{nil, nil, nil}, &apiError{errorBadData, err}
 	}
 
 	ctx := r.Context()
@@ -544,7 +543,7 @@ func (api *API) queryRange(r *http.Request) (result apiFuncResult) {
 
 	opts, err := extractQueryOpts(r)
 	if err != nil {
-		return apiFuncResult{nil, &apiError{errorBadData, err}, nil, nil}
+		return apiFuncResult{nil, nil, nil}, &apiError{errorBadData, err}
 	}
 	qry, err := api.QueryEngine.NewRangeQuery(ctx, api.Queryable, opts, r.FormValue("query"), start, end, step)
 	if err != nil {
@@ -563,7 +562,7 @@ func (api *API) queryRange(r *http.Request) (result apiFuncResult) {
 
 	res := qry.Exec(ctx)
 	if res.Err != nil {
-		return apiFuncResult{nil, returnAPIError(res.Err), res.Warnings, qry.Close}
+		return apiFuncResult{nil, res.Warnings, qry.Close}, returnAPIError(res.Err)
 	}
 
 	// Optional stats field in response if parameter "stats" is not empty.
@@ -596,26 +595,26 @@ func (api *API) queryExemplars(r *http.Request) apiFuncResult {
 
 	expr, err := parser.ParseExpr(r.FormValue("query"))
 	if err != nil {
-		return apiFuncResult{nil, &apiError{errorBadData, err}, nil, nil}
+		return apiFuncResult{nil, nil, nil}, &apiError{errorBadData, err}
 	}
 
 	selectors := parser.ExtractSelectors(expr)
 	if len(selectors) < 1 {
-		return apiFuncResult{nil, nil, nil, nil}
+		return apiFuncResult{nil, nil, nil}, nil
 	}
 
 	ctx := r.Context()
 	eq, err := api.ExemplarQueryable.ExemplarQuerier(ctx)
 	if err != nil {
-		return apiFuncResult{nil, returnAPIError(err), nil, nil}
+		return apiFuncResult{nil, nil, nil}, returnAPIError(err)
 	}
 
 	res, err := eq.Select(timestamp.FromTime(start), timestamp.FromTime(end), selectors...)
 	if err != nil {
-		return apiFuncResult{nil, returnAPIError(err), nil, nil}
+		return apiFuncResult{nil, nil, nil}, returnAPIError(err)
 	}
 
-	return apiFuncResult{res, nil, nil, nil}
+	return apiFuncResult{res, nil, nil}, nil
 }
 
 func returnAPIError(err error) *apiError {
@@ -642,7 +641,7 @@ func returnAPIError(err error) *apiError {
 	return &apiError{errorExec, err}
 }
 
-func (api *API) labelNames(r *http.Request) apiFuncResult {
+func (api *API) labelNames(r *http.Request) (apiFuncResult, nil) {
 	limit, err := parseLimitParam(r.FormValue("limit"))
 	if err != nil {
 		return invalidParamError(err, "limit")
@@ -659,12 +658,12 @@ func (api *API) labelNames(r *http.Request) apiFuncResult {
 
 	matcherSets, err := parseMatchersParam(r.Form["match[]"])
 	if err != nil {
-		return apiFuncResult{nil, &apiError{errorBadData, err}, nil, nil}
+		return apiFuncResult{nil, nil, nil}, &apiError{errorBadData, err}
 	}
 
 	q, err := api.Queryable.Querier(timestamp.FromTime(start), timestamp.FromTime(end))
 	if err != nil {
-		return apiFuncResult{nil, returnAPIError(err), nil, nil}
+		return apiFuncResult{nil, nil, nil}, returnAPIError(err)
 	}
 	defer q.Close()
 
@@ -678,7 +677,7 @@ func (api *API) labelNames(r *http.Request) apiFuncResult {
 		for _, matchers := range matcherSets {
 			vals, callWarnings, err := q.LabelNames(r.Context(), matchers...)
 			if err != nil {
-				return apiFuncResult{nil, returnAPIError(err), warnings, nil}
+				return apiFuncResult{nil, warnings, nil}, returnAPIError(err)
 			}
 
 			warnings.Merge(callWarnings)
@@ -700,7 +699,7 @@ func (api *API) labelNames(r *http.Request) apiFuncResult {
 		}
 		names, warnings, err = q.LabelNames(r.Context(), matchers...)
 		if err != nil {
-			return apiFuncResult{nil, &apiError{errorExec, err}, warnings, nil}
+			return apiFuncResult{nil, warnings, nil}, &apiError{errorExec, err}
 		}
 	}
 
@@ -712,15 +711,15 @@ func (api *API) labelNames(r *http.Request) apiFuncResult {
 		names = names[:limit]
 		warnings = warnings.Add(errors.New("results truncated due to limit"))
 	}
-	return apiFuncResult{names, nil, warnings, nil}
+	return apiFuncResult{names, warnings, nil}, nil
 }
 
-func (api *API) labelValues(r *http.Request) (result apiFuncResult) {
+func (api *API) labelValues(r *http.Request) (result apiFuncResult, error) {
 	ctx := r.Context()
 	name := route.Param(ctx, "name")
 
 	if !model.LabelNameRE.MatchString(name) {
-		return apiFuncResult{nil, &apiError{errorBadData, fmt.Errorf("invalid label name: %q", name)}, nil, nil}
+		return apiFuncResult{nil, nil, nil}, &apiError{errorBadData, fmt.Errorf("invalid label name: %q", name)}
 	}
 
 	limit, err := parseLimitParam(r.FormValue("limit"))
@@ -739,12 +738,12 @@ func (api *API) labelValues(r *http.Request) (result apiFuncResult) {
 
 	matcherSets, err := parseMatchersParam(r.Form["match[]"])
 	if err != nil {
-		return apiFuncResult{nil, &apiError{errorBadData, err}, nil, nil}
+		return apiFuncResult{nil, nil, nil}, &apiError{errorBadData, err}
 	}
 
 	q, err := api.Queryable.Querier(timestamp.FromTime(start), timestamp.FromTime(end))
 	if err != nil {
-		return apiFuncResult{nil, &apiError{errorExec, err}, nil, nil}
+		return apiFuncResult{nil, nil, nil}, &apiError{errorExec, err}
 	}
 	// From now on, we must only return with a finalizer in the result (to
 	// be called by the caller) or call q.Close ourselves (which is required
@@ -787,7 +786,7 @@ func (api *API) labelValues(r *http.Request) (result apiFuncResult) {
 		}
 		vals, warnings, err = q.LabelValues(ctx, name, matchers...)
 		if err != nil {
-			return apiFuncResult{nil, &apiError{errorExec, err}, warnings, closer}
+			return apiFuncResult{nil, warnings, closer}, &apiError{errorExec, err}
 		}
 
 		if vals == nil {
@@ -818,14 +817,14 @@ var (
 	maxTimeFormatted = MaxTime.Format(time.RFC3339Nano)
 )
 
-func (api *API) series(r *http.Request) (result apiFuncResult) {
+func (api *API) series(r *http.Request) (result apiFuncResult, error) {
 	ctx := r.Context()
 
 	if err := r.ParseForm(); err != nil {
-		return apiFuncResult{nil, &apiError{errorBadData, fmt.Errorf("error parsing form values: %w", err)}, nil, nil}
+		return apiFuncResult{nil, nil, nil}, &apiError{errorBadData, fmt.Errorf("error parsing form values: %w", err)}
 	}
 	if len(r.Form["match[]"]) == 0 {
-		return apiFuncResult{nil, &apiError{errorBadData, errors.New("no match[] parameter provided")}, nil, nil}
+		return apiFuncResult{nil, nil, nil}, &apiError{errorBadData, errors.New("no match[] parameter provided")}
 	}
 
 	limit, err := parseLimitParam(r.FormValue("limit"))
@@ -849,7 +848,7 @@ func (api *API) series(r *http.Request) (result apiFuncResult) {
 
 	q, err := api.Queryable.Querier(timestamp.FromTime(start), timestamp.FromTime(end))
 	if err != nil {
-		return apiFuncResult{nil, returnAPIError(err), nil, nil}
+		return apiFuncResult{nil, nil, nil}, returnAPIError(err)
 	}
 	// From now on, we must only return with a finalizer in the result (to
 	// be called by the caller) or call q.Close ourselves (which is required
@@ -889,25 +888,25 @@ func (api *API) series(r *http.Request) (result apiFuncResult) {
 
 	for set.Next() {
 		if err := ctx.Err(); err != nil {
-			return apiFuncResult{nil, returnAPIError(err), warnings, closer}
+			return apiFuncResult{nil, warnings, closer}, returnAPIError(err)
 		}
 		metrics = append(metrics, set.At().Labels())
 
 		if len(metrics) > limit {
 			metrics = metrics[:limit]
 			warnings.Add(errors.New("results truncated due to limit"))
-			return apiFuncResult{metrics, nil, warnings, closer}
+			return apiFuncResult{metrics, warnings, closer}, nil
 		}
 	}
 	if set.Err() != nil {
-		return apiFuncResult{nil, returnAPIError(set.Err()), warnings, closer}
+		return apiFuncResult{nil, warnings, closer}, returnAPIError(set.Err())
 	}
 
-	return apiFuncResult{metrics, nil, warnings, closer}
+	return apiFuncResult{metrics, warnings, closer}, nil
 }
 
-func (api *API) dropSeries(_ *http.Request) apiFuncResult {
-	return apiFuncResult{nil, &apiError{errorInternal, errors.New("not implemented")}, nil, nil}
+func (api *API) dropSeries(_ *http.Request) (apiFuncResult, error) {
+	return apiFuncResult{nil, nil, nil}, &apiError{errorInternal, errors.New("not implemented")}
 }
 
 // Target has the information for one target.
@@ -1014,14 +1013,14 @@ func getGlobalURL(u *url.URL, opts GlobalURLOptions) (*url.URL, error) {
 	return u, nil
 }
 
-func (api *API) scrapePools(r *http.Request) apiFuncResult {
+func (api *API) scrapePools(r *http.Request) (apiFuncResult, error) {
 	names := api.scrapePoolsRetriever(r.Context()).ScrapePools()
 	sort.Strings(names)
 	res := &ScrapePoolsDiscovery{ScrapePools: names}
-	return apiFuncResult{data: res, err: nil, warnings: nil, finalizer: nil}
+	return apiFuncResult{data: res, warnings: nil, finalizer: nil}, nil
 }
 
-func (api *API) targets(r *http.Request) apiFuncResult {
+func (api *API) targets(r *http.Request) (apiFuncResult, error) {
 	sortKeys := func(targets map[string][]*scrape.Target) ([]string, int) {
 		var n int
 		keys := make([]string, 0, len(targets))
@@ -1105,7 +1104,7 @@ func (api *API) targets(r *http.Request) apiFuncResult {
 	} else {
 		res.DroppedTargets = []*DroppedTarget{}
 	}
-	return apiFuncResult{res, nil, nil, nil}
+	return apiFuncResult{res, nil, nil}, nil
 }
 
 func matchLabels(lset labels.Labels, matchers []*labels.Matcher) bool {
@@ -1117,7 +1116,7 @@ func matchLabels(lset labels.Labels, matchers []*labels.Matcher) bool {
 	return true
 }
 
-func (api *API) targetMetadata(r *http.Request) apiFuncResult {
+func (api *API) targetMetadata(r *http.Request) (apiFuncResult, error) {
 	limit := -1
 	if s := r.FormValue("limit"); s != "" {
 		var err error
@@ -1174,7 +1173,7 @@ func (api *API) targetMetadata(r *http.Request) apiFuncResult {
 		}
 	}
 
-	return apiFuncResult{res, nil, nil, nil}
+	return apiFuncResult{res, nil, nil}, nil
 }
 
 type metricMetadata struct {
@@ -1196,7 +1195,7 @@ type AlertmanagerTarget struct {
 	URL string `json:"url"`
 }
 
-func (api *API) alertmanagers(r *http.Request) apiFuncResult {
+func (api *API) alertmanagers(r *http.Request) (apiFuncResult, error) {
 	urls := api.alertmanagerRetriever(r.Context()).Alertmanagers()
 	droppedURLS := api.alertmanagerRetriever(r.Context()).DroppedAlertmanagers()
 	ams := &AlertmanagerDiscovery{ActiveAlertmanagers: make([]*AlertmanagerTarget, len(urls)), DroppedAlertmanagers: make([]*AlertmanagerTarget, len(droppedURLS))}
@@ -1206,7 +1205,7 @@ func (api *API) alertmanagers(r *http.Request) apiFuncResult {
 	for i, url := range droppedURLS {
 		ams.DroppedAlertmanagers[i] = &AlertmanagerTarget{URL: url.String()}
 	}
-	return apiFuncResult{ams, nil, nil, nil}
+	return apiFuncResult{ams, nil, nil}, nil
 }
 
 // AlertDiscovery has info for all active alerts.
@@ -1237,7 +1236,7 @@ func (api *API) alerts(r *http.Request) apiFuncResult {
 
 	res := &AlertDiscovery{Alerts: alerts}
 
-	return apiFuncResult{res, nil, nil, nil}
+	return apiFuncResult{res, nil, nil}, nil
 }
 
 func rulesAlertsToAPIAlerts(rulesAlerts []*rules.Alert) []*Alert {
@@ -1258,21 +1257,21 @@ func rulesAlertsToAPIAlerts(rulesAlerts []*rules.Alert) []*Alert {
 	return apiAlerts
 }
 
-func (api *API) metricMetadata(r *http.Request) apiFuncResult {
+func (api *API) metricMetadata(r *http.Request) (apiFuncResult, error) {
 	metrics := map[string]map[metadata.Metadata]struct{}{}
 
 	limit := -1
 	if s := r.FormValue("limit"); s != "" {
 		var err error
 		if limit, err = strconv.Atoi(s); err != nil {
-			return apiFuncResult{nil, &apiError{errorBadData, errors.New("limit must be a number")}, nil, nil}
+			return apiFuncResult{nil, nil, nil}, &apiError{errorBadData, errors.New("limit must be a number")}
 		}
 	}
 	limitPerMetric := -1
 	if s := r.FormValue("limit_per_metric"); s != "" {
 		var err error
 		if limitPerMetric, err = strconv.Atoi(s); err != nil {
-			return apiFuncResult{nil, &apiError{errorBadData, errors.New("limit_per_metric must be a number")}, nil, nil}
+			return apiFuncResult{nil, nil, nil}, &apiError{errorBadData, errors.New("limit_per_metric must be a number")}
 		}
 	}
 
@@ -1328,7 +1327,7 @@ func (api *API) metricMetadata(r *http.Request) apiFuncResult {
 		res[name] = s
 	}
 
-	return apiFuncResult{res, nil, nil, nil}
+	return apiFuncResult{res, nil, nil}, nil
 }
 
 // RuleDiscovery has info for all rules.
@@ -1382,9 +1381,9 @@ type RecordingRule struct {
 	Type string `json:"type"`
 }
 
-func (api *API) rules(r *http.Request) apiFuncResult {
+func (api *API) rules(r *http.Request) (apiFuncResult, error) {
 	if err := r.ParseForm(); err != nil {
-		return apiFuncResult{nil, &apiError{errorBadData, fmt.Errorf("error parsing form values: %w", err)}, nil, nil}
+		return apiFuncResult{nil, nil, nil}, &apiError{errorBadData, fmt.Errorf("error parsing form values: %w", err)}
 	}
 
 	queryFormToSet := func(values []string) map[string]struct{} {
@@ -1491,7 +1490,7 @@ func (api *API) rules(r *http.Request) apiFuncResult {
 				}
 			default:
 				err := fmt.Errorf("failed to assert type of rule '%v'", rule.Name())
-				return apiFuncResult{nil, &apiError{errorInternal, err}, nil, nil}
+				return apiFuncResult{nil, nil, nil}, &apiError{errorInternal, err}
 			}
 
 			if enrichedRule != nil {
@@ -1526,27 +1525,27 @@ type prometheusConfig struct {
 	YAML string `json:"yaml"`
 }
 
-func (api *API) serveRuntimeInfo(_ *http.Request) apiFuncResult {
+func (api *API) serveRuntimeInfo(_ *http.Request) (apiFuncResult, error) {
 	status, err := api.runtimeInfo()
 	if err != nil {
-		return apiFuncResult{status, &apiError{errorInternal, err}, nil, nil}
+		return apiFuncResult{status, nil, nil}, &apiError{errorInternal, err}
 	}
-	return apiFuncResult{status, nil, nil, nil}
+	return apiFuncResult{status, nil, nil}, nil
 }
 
-func (api *API) serveBuildInfo(_ *http.Request) apiFuncResult {
-	return apiFuncResult{api.buildInfo, nil, nil, nil}
+func (api *API) serveBuildInfo(_ *http.Request) (apiFuncResult, error) {
+	return apiFuncResult{api.buildInfo, nil, nil}, nil
 }
 
-func (api *API) serveConfig(_ *http.Request) apiFuncResult {
+func (api *API) serveConfig(_ *http.Request) (apiFuncResult, error) {
 	cfg := &prometheusConfig{
 		YAML: api.config().String(),
 	}
-	return apiFuncResult{cfg, nil, nil, nil}
+	return apiFuncResult{cfg, nil, nil}, nil
 }
 
-func (api *API) serveFlags(_ *http.Request) apiFuncResult {
-	return apiFuncResult{api.flagsMap, nil, nil, nil}
+func (api *API) serveFlags(_ *http.Request) (apiFuncResult, error) {
+	return apiFuncResult{api.flagsMap, nil, nil}, nil
 }
 
 // TSDBStat holds the information about individual cardinality.

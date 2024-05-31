@@ -337,7 +337,9 @@ func (api *API) Register(r *route.Router) {
 				defer result.finalizer()
 			}
 			if result.err != nil {
-				api.respondError(w, result.err, result.data)
+				var apiErr *apiError
+				errors.As(result.err, &apiErr)
+				api.respondError(w, apiErr, result.data)
 				return
 			}
 

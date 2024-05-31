@@ -163,7 +163,7 @@ type Response struct {
 
 type apiFuncResult struct {
 	data      interface{}
-	err       *apiError
+	err       error
 	warnings  annotations.Annotations
 	finalizer func()
 }

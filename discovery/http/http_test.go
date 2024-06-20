@@ -71,7 +71,7 @@ func TestHTTPValidRefresh(t *testing.T) {
 		},
 	}
 	require.Equal(t, expectedTargets, tgs)
-	require.Equal(t, 0.0, getFailureCount(d.metrics.failuresCount))
+	require.Zero(t, getFailureCount(d.metrics.failuresCount))
 }
 
 func TestHTTPInvalidCode(t *testing.T) {

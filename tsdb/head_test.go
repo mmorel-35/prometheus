@@ -723,14 +723,14 @@ func TestHead_WALMultiRef(t *testing.T) {
 	ref1, err := app.Append(0, labels.FromStrings("foo", "bar"), 100, 1)
 	require.NoError(t, err)
 	require.NoError(t, app.Commit())
-	require.Equal(t, 1.0, prom_testutil.ToFloat64(head.metrics.chunksCreated))
+	require.InDelta(t, 1.0, prom_testutil.ToFloat64(head.metrics.chunksCreated), 0.01)
 
 	// Add another sample outside chunk range to mmap a chunk.
 	app = head.Appender(context.Background())
 	_, err = app.Append(0, labels.FromStrings("foo", "bar"), 1500, 2)
 	require.NoError(t, err)
 	require.NoError(t, app.Commit())
-	require.Equal(t, 2.0, prom_testutil.ToFloat64(head.metrics.chunksCreated))
+	require.InDelta(t, 2.0, prom_testutil.ToFloat64(head.metrics.chunksCreated), 0.01)
 
 	require.NoError(t, head.Truncate(1600))
 
@@ -738,14 +738,14 @@ func TestHead_WALMultiRef(t *testing.T) {
 	ref2, err := app.Append(0, labels.FromStrings("foo", "bar"), 1700, 3)
 	require.NoError(t, err)
 	require.NoError(t, app.Commit())
-	require.Equal(t, 3.0, prom_testutil.ToFloat64(head.metrics.chunksCreated))
+	require.InDelta(t, 3.0, prom_testutil.ToFloat64(head.metrics.chunksCreated), 0.01)
 
 	// Add another sample outside chunk range to mmap a chunk.
 	app = head.Appender(context.Background())
 	_, err = app.Append(0, labels.FromStrings("foo", "bar"), 2000, 4)
 	require.NoError(t, err)
 	require.NoError(t, app.Commit())
-	require.Equal(t, 4.0, prom_testutil.ToFloat64(head.metrics.chunksCreated))
+	require.InDelta(t, 4.0, prom_testutil.ToFloat64(head.metrics.chunksCreated), 0.01)
 
 	require.NotEqual(t, ref1, ref2, "Refs are the same")
 	require.NoError(t, head.Close())
@@ -782,7 +782,7 @@ func TestHead_ActiveAppenders(t *testing.T) {
 
 	// First rollback with no samples.
 	app := head.Appender(context.Background())
-	require.Equal(t, 1.0, prom_testutil.ToFloat64(head.metrics.activeAppenders))
+	require.InDelta(t, 1.0, prom_testutil.ToFloat64(head.metrics.activeAppenders), 0.01)
 	require.NoError(t, app.Rollback())
 	require.Zero(t, prom_testutil.ToFloat64(head.metrics.activeAppenders))
 
@@ -795,7 +795,7 @@ func TestHead_ActiveAppenders(t *testing.T) {
 	app = head.Appender(context.Background())
 	_, err := app.Append(0, labels.FromStrings("foo", "bar"), 100, 1)
 	require.NoError(t, err)
-	require.Equal(t, 1.0, prom_testutil.ToFloat64(head.metrics.activeAppenders))
+	require.InDelta(t, 1.0, prom_testutil.ToFloat64(head.metrics.activeAppenders), 0.01)
 	require.NoError(t, app.Rollback())
 	require.Zero(t, prom_testutil.ToFloat64(head.metrics.activeAppenders))
 
@@ -2149,7 +2149,7 @@ func TestWalRepair_DecodingError(t *testing.T) {
 					defer func() {
 						require.NoError(t, db.Close())
 					}()
-					require.Equal(t, 1.0, prom_testutil.ToFloat64(db.head.metrics.walCorruptionsTotal))
+					require.InDelta(t, 1.0, prom_testutil.ToFloat64(db.head.metrics.walCorruptionsTotal), 0.01)
 				}
 
 				// Read the wal content after the repair.
@@ -2224,7 +2224,7 @@ func TestWblRepair_DecodingError(t *testing.T) {
 		defer func() {
 			require.NoError(t, db.Close())
 		}()
-		require.Equal(t, 1.0, prom_testutil.ToFloat64(db.head.metrics.walCorruptionsTotal))
+		require.InDelta(t, 1.0, prom_testutil.ToFloat64(db.head.metrics.walCorruptionsTotal), 0.01)
 	}
 
 	// Read the wbl content after the repair.
@@ -2307,7 +2307,7 @@ func TestHeadReadWriterRepair(t *testing.T) {
 		defer func() {
 			require.NoError(t, db.Close())
 		}()
-		require.Equal(t, 1.0, prom_testutil.ToFloat64(db.head.metrics.mmapChunkCorruptionTotal))
+		require.InDelta(t, 1.0, prom_testutil.ToFloat64(db.head.metrics.mmapChunkCorruptionTotal), 0.01)
 	}
 
 	// Verify that there are 3 segment files after the repair.
@@ -2687,15 +2687,15 @@ func TestOutOfOrderSamplesMetric(t *testing.T) {
 	app = db.Appender(ctx)
 	_, err = app.Append(0, labels.FromStrings("a", "b"), 2, 99)
 	require.Equal(t, storage.ErrOutOfOrderSample, err)
-	require.Equal(t, 1.0, prom_testutil.ToFloat64(db.head.metrics.outOfOrderSamples.WithLabelValues(sampleMetricTypeFloat)))
+	require.InDelta(t, 1.0, prom_testutil.ToFloat64(db.head.metrics.outOfOrderSamples.WithLabelValues(sampleMetricTypeFloat)), 0.01)
 
 	_, err = app.Append(0, labels.FromStrings("a", "b"), 3, 99)
 	require.Equal(t, storage.ErrOutOfOrderSample, err)
-	require.Equal(t, 2.0, prom_testutil.ToFloat64(db.head.metrics.outOfOrderSamples.WithLabelValues(sampleMetricTypeFloat)))
+	require.InDelta(t, 2.0, prom_testutil.ToFloat64(db.head.metrics.outOfOrderSamples.WithLabelValues(sampleMetricTypeFloat)), 0.01)
 
 	_, err = app.Append(0, labels.FromStrings("a", "b"), 4, 99)
 	require.Equal(t, storage.ErrOutOfOrderSample, err)
-	require.Equal(t, 3.0, prom_testutil.ToFloat64(db.head.metrics.outOfOrderSamples.WithLabelValues(sampleMetricTypeFloat)))
+	require.InDelta(t, 3.0, prom_testutil.ToFloat64(db.head.metrics.outOfOrderSamples.WithLabelValues(sampleMetricTypeFloat)), 0.01)
 	require.NoError(t, app.Commit())
 
 	// Compact Head to test out of bound metric.

@@ -1218,7 +1218,7 @@ func TestGaugeFailedConfigs(t *testing.T) {
 	<-discoveryManager.SyncCh()
 
 	failedCount := client_testutil.ToFloat64(discoveryManager.metrics.FailedConfigs)
-	require.Equal(t, 3.0, failedCount, "Expected to have 3 failed configs.")
+	require.InDelta(t, 3.0, failedCount, "Expected to have 3 failed configs.", 0.01)
 
 	c["prometheus"] = Configs{
 		staticConfig("foo:9090"),

@@ -784,12 +784,12 @@ func TestHead_ActiveAppenders(t *testing.T) {
 	app := head.Appender(context.Background())
 	require.Equal(t, 1.0, prom_testutil.ToFloat64(head.metrics.activeAppenders))
 	require.NoError(t, app.Rollback())
-	require.Zero(t,prom_testutil.ToFloat64(head.metrics.activeAppenders))
+	require.Zero(t, prom_testutil.ToFloat64(head.metrics.activeAppenders))
 
 	// Then commit with no samples.
 	app = head.Appender(context.Background())
 	require.NoError(t, app.Commit())
-	require.Zero(t,prom_testutil.ToFloat64(head.metrics.activeAppenders))
+	require.Zero(t, prom_testutil.ToFloat64(head.metrics.activeAppenders))
 
 	// Now rollback with one sample.
 	app = head.Appender(context.Background())
@@ -797,14 +797,14 @@ func TestHead_ActiveAppenders(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 1.0, prom_testutil.ToFloat64(head.metrics.activeAppenders))
 	require.NoError(t, app.Rollback())
-	require.Zero(t,prom_testutil.ToFloat64(head.metrics.activeAppenders))
+	require.Zero(t, prom_testutil.ToFloat64(head.metrics.activeAppenders))
 
 	// Now commit with one sample.
 	app = head.Appender(context.Background())
 	_, err = app.Append(0, labels.FromStrings("foo", "bar"), 100, 1)
 	require.NoError(t, err)
 	require.NoError(t, app.Commit())
-	require.Zero(t,prom_testutil.ToFloat64(head.metrics.activeAppenders))
+	require.Zero(t, prom_testutil.ToFloat64(head.metrics.activeAppenders))
 }
 
 func TestHead_UnknownWALRecord(t *testing.T) {
@@ -2134,7 +2134,7 @@ func TestWalRepair_DecodingError(t *testing.T) {
 					opts.ChunkDirRoot = w.Dir()
 					h, err := NewHead(nil, nil, w, nil, opts, nil)
 					require.NoError(t, err)
-					require.Zero(t,prom_testutil.ToFloat64(h.metrics.walCorruptionsTotal))
+					require.Zero(t, prom_testutil.ToFloat64(h.metrics.walCorruptionsTotal))
 					initErr := h.Init(math.MinInt64)
 
 					var cerr *wlog.CorruptionErr
@@ -2206,7 +2206,7 @@ func TestWblRepair_DecodingError(t *testing.T) {
 		opts.OutOfOrderTimeWindow.Store(1000 * time.Minute.Milliseconds())
 		h, err := NewHead(nil, nil, wal, wbl, opts, nil)
 		require.NoError(t, err)
-		require.Zero(t,prom_testutil.ToFloat64(h.metrics.walCorruptionsTotal))
+		require.Zero(t, prom_testutil.ToFloat64(h.metrics.walCorruptionsTotal))
 		initErr := h.Init(math.MinInt64)
 
 		var elb *errLoadWbl
@@ -2260,7 +2260,7 @@ func TestHeadReadWriterRepair(t *testing.T) {
 		opts.ChunkWriteQueueSize = 1 // We need to set this option so that we use the async queue. Upstream prometheus uses the queue directly.
 		h, err := NewHead(nil, nil, w, nil, opts, nil)
 		require.NoError(t, err)
-		require.Zero(t,prom_testutil.ToFloat64(h.metrics.mmapChunkCorruptionTotal))
+		require.Zero(t, prom_testutil.ToFloat64(h.metrics.mmapChunkCorruptionTotal))
 		require.NoError(t, h.Init(math.MinInt64))
 
 		cOpts := chunkOpts{
@@ -2683,7 +2683,7 @@ func TestOutOfOrderSamplesMetric(t *testing.T) {
 	require.NoError(t, app.Commit())
 
 	// Test out of order metric.
-	require.Zero(t,prom_testutil.ToFloat64(db.head.metrics.outOfOrderSamples.WithLabelValues(sampleMetricTypeFloat)))
+	require.Zero(t, prom_testutil.ToFloat64(db.head.metrics.outOfOrderSamples.WithLabelValues(sampleMetricTypeFloat)))
 	app = db.Appender(ctx)
 	_, err = app.Append(0, labels.FromStrings("a", "b"), 2, 99)
 	require.Equal(t, storage.ErrOutOfOrderSample, err)
@@ -4024,7 +4024,7 @@ func TestChunkSnapshot(t *testing.T) {
 
 		openHeadAndCheckReplay()
 
-		require.Zero(t,prom_testutil.ToFloat64(head.metrics.snapshotReplayErrorTotal))
+		require.Zero(t, prom_testutil.ToFloat64(head.metrics.snapshotReplayErrorTotal))
 	}
 }
 
@@ -4696,7 +4696,7 @@ func TestChunkSnapshotTakenAfterIncompleteSnapshot(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, head.Init(math.MinInt64))
 
-	require.Zero(t,prom_testutil.ToFloat64(head.metrics.snapshotReplayErrorTotal))
+	require.Zero(t, prom_testutil.ToFloat64(head.metrics.snapshotReplayErrorTotal))
 
 	// Add some samples for the snapshot.
 	app := head.Appender(context.Background())

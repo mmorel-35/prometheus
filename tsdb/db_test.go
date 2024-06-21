@@ -3364,7 +3364,7 @@ func TestOneCheckpointPerCompactCall(t *testing.T) {
 	// As the data spans for 59 blocks, 58 go to disk and 1 remains in Head.
 	require.Len(t, db.Blocks(), 58)
 	// Though WAL was truncated only once, head should be truncated after each compaction.
-	require.Equal(t, 58.0, prom_testutil.ToFloat64(db.head.metrics.headTruncateTotal))
+	require.InDelta(t, 58.0, prom_testutil.ToFloat64(db.head.metrics.headTruncateTotal), 0.01)
 
 	// The compaction should have only truncated first 2/3 of WAL (while also rotating the files).
 	first, last, err = wlog.Segments(db.head.wal.Dir())
@@ -3417,7 +3417,7 @@ func TestOneCheckpointPerCompactCall(t *testing.T) {
 
 	require.Zero(t, prom_testutil.ToFloat64(db.head.metrics.checkpointCreationTotal))
 	require.NoError(t, db.Compact(ctx))
-	require.Equal(t, 1.0, prom_testutil.ToFloat64(db.head.metrics.checkpointCreationTotal))
+	require.InDelta(t, 1.0, prom_testutil.ToFloat64(db.head.metrics.checkpointCreationTotal), 0.01)
 
 	// No new blocks should be created as there was not data in between the new samples and the blocks.
 	require.Len(t, db.Blocks(), 59)
@@ -3516,7 +3516,7 @@ func testQuerierShouldNotPanicIfHeadChunkIsTruncatedWhileReadingQueriedChunks(t 
 
 	// Compact the TSDB head for the first time. We expect the head chunks file has been cut.
 	require.NoError(t, db.Compact(ctx))
-	require.Equal(t, float64(1), prom_testutil.ToFloat64(db.Head().metrics.headTruncateTotal))
+	require.InDelta(t, float64(1), prom_testutil.ToFloat64(db.Head().metrics.headTruncateTotal), 0.01)
 
 	// Push more samples for another 1x block duration period.
 	for ; ts < 3*DefaultBlockDuration; ts += interval {
@@ -3561,7 +3561,7 @@ func testQuerierShouldNotPanicIfHeadChunkIsTruncatedWhileReadingQueriedChunks(t 
 
 	// Compact the TSDB head again.
 	require.NoError(t, db.Compact(ctx))
-	require.Equal(t, float64(2), prom_testutil.ToFloat64(db.Head().metrics.headTruncateTotal))
+	require.InDelta(t, float64(2), prom_testutil.ToFloat64(db.Head().metrics.headTruncateTotal), 0.01)
 
 	// At this point we expect 1 head chunk has been deleted.
 
@@ -3652,7 +3652,7 @@ func testChunkQuerierShouldNotPanicIfHeadChunkIsTruncatedWhileReadingQueriedChun
 
 	// Compact the TSDB head for the first time. We expect the head chunks file has been cut.
 	require.NoError(t, db.Compact(ctx))
-	require.Equal(t, float64(1), prom_testutil.ToFloat64(db.Head().metrics.headTruncateTotal))
+	require.InDelta(t, float64(1), prom_testutil.ToFloat64(db.Head().metrics.headTruncateTotal), 0.01)
 
 	// Push more samples for another 1x block duration period.
 	for ; ts < 3*DefaultBlockDuration; ts += interval {
@@ -3695,7 +3695,7 @@ func testChunkQuerierShouldNotPanicIfHeadChunkIsTruncatedWhileReadingQueriedChun
 
 	// Compact the TSDB head again.
 	require.NoError(t, db.Compact(ctx))
-	require.Equal(t, float64(2), prom_testutil.ToFloat64(db.Head().metrics.headTruncateTotal))
+	require.InDelta(t, float64(2), prom_testutil.ToFloat64(db.Head().metrics.headTruncateTotal), 0.01)
 
 	// At this point we expect 1 head chunk has been deleted.
 
@@ -3769,7 +3769,7 @@ func TestQuerierShouldNotFailIfOOOCompactionOccursAfterRetrievingQuerier(t *test
 		defer compactionComplete.Store(true)
 
 		require.NoError(t, db.CompactOOOHead(ctx))
-		require.Equal(t, float64(1), prom_testutil.ToFloat64(db.Head().metrics.chunksRemoved))
+		require.InDelta(t, float64(1), prom_testutil.ToFloat64(db.Head().metrics.chunksRemoved), 0.01)
 	}()
 
 	// Give CompactOOOHead time to start work.

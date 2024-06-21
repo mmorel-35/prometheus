@@ -436,7 +436,11 @@ func TestWriteReadHistogramChunkLayout(t *testing.T) {
 		gotSchema, gotZeroThreshold, gotPositiveSpans, gotNegativeSpans, err := readHistogramChunkLayout(&bsr)
 		require.NoError(t, err)
 		require.Equal(t, want.schema, gotSchema)
-		require.Equal(t, want.zeroThreshold, gotZeroThreshold)
+		if want.zeroThreshold == 0 {
+			require.Zero(t, gotZeroThreshold)
+		} else {
+			require.Equal(t, want.zeroThreshold, gotZeroThreshold, 0.01)
+		}
 		require.Equal(t, want.positiveSpans, gotPositiveSpans)
 		require.Equal(t, want.negativeSpans, gotNegativeSpans)
 	}

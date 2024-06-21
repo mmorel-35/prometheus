@@ -3958,7 +3958,7 @@ func TestQuerierShouldNotFailIfOOOCompactionOccursAfterRetrievingIterators(t *te
 		defer compactionComplete.Store(true)
 
 		require.NoError(t, db.CompactOOOHead(ctx))
-		require.Equal(t, float64(1), prom_testutil.ToFloat64(db.Head().metrics.chunksRemoved))
+		require.InDelta(t, float64(1), prom_testutil.ToFloat64(db.Head().metrics.chunksRemoved), 0.01)
 	}()
 
 	// Give CompactOOOHead time to start work.
@@ -5234,7 +5234,7 @@ func TestOOOAppendAndQuery(t *testing.T) {
 	// In-order samples.
 	addSample(s1, 300, 300, false)
 	addSample(s2, 290, 290, false)
-	require.Equal(t, float64(2), prom_testutil.ToFloat64(db.head.metrics.chunksCreated))
+	require.InDelta(t, float64(2), prom_testutil.ToFloat64(db.head.metrics.chunksCreated), 0.01)
 	testQuery(math.MinInt64, math.MaxInt64)
 
 	// Some ooo samples.
@@ -5276,9 +5276,9 @@ func TestOOOAppendAndQuery(t *testing.T) {
 	// Generating some m-map chunks. The m-map chunks here are in such a way
 	// that when sorted w.r.t. mint, the last chunk's maxt is not the overall maxt
 	// of the merged chunk. This tests a bug fixed in https://github.com/grafana/mimir-prometheus/pull/238/.
-	require.Equal(t, float64(4), prom_testutil.ToFloat64(db.head.metrics.chunksCreated))
+	require.InDelta(t, float64(4), prom_testutil.ToFloat64(db.head.metrics.chunksCreated), 0.01)
 	addSample(s1, 180, 249, false)
-	require.Equal(t, float64(6), prom_testutil.ToFloat64(db.head.metrics.chunksCreated))
+	require.InDelta(t, float64(6), prom_testutil.ToFloat64(db.head.metrics.chunksCreated), 0.01)
 	verifyOOOMinMaxTimes(60, 265)
 	testQuery(math.MinInt64, math.MaxInt64)
 }
@@ -5333,8 +5333,9 @@ func TestOOODisabled(t *testing.T) {
 	seriesSet := query(t, querier, labels.MustNewMatcher(labels.MatchRegexp, "foo", "bar."))
 	require.Equal(t, expSamples, seriesSet)
 	requireEqualOOOSamples(t, 0, db)
-	require.Equal(t, float64(failedSamples),
+	require.InDeltaf(t, float64(failedSamples),
 		prom_testutil.ToFloat64(db.head.metrics.outOfOrderSamples.WithLabelValues(sampleMetricTypeFloat))+prom_testutil.ToFloat64(db.head.metrics.outOfBoundSamples.WithLabelValues(sampleMetricTypeFloat)),
+		0.01,
 		"number of ooo/oob samples mismatch")
 
 	// Verifying that no OOO artifacts were generated.
@@ -5395,12 +5396,12 @@ func TestWBLAndMmapReplay(t *testing.T) {
 
 	// In-order samples.
 	addSample(s1, 300, 300)
-	require.Equal(t, float64(1), prom_testutil.ToFloat64(db.head.metrics.chunksCreated))
+	require.InDelta(t, float64(1), prom_testutil.ToFloat64(db.head.metrics.chunksCreated), 0.01)
 
 	// Some ooo samples.
 	addSample(s1, 250, 260)
 	addSample(s1, 195, 249) // This creates some m-map chunks.
-	require.Equal(t, float64(4), prom_testutil.ToFloat64(db.head.metrics.chunksCreated))
+	require.InDelta(t, float64(4), prom_testutil.ToFloat64(db.head.metrics.chunksCreated), 0.01)
 	testQuery(expSamples)
 	oooMint, oooMaxt := minutes(195), minutes(260)
 
@@ -5785,7 +5786,7 @@ func TestWBLCorruption(t *testing.T) {
 	// Restart does the replay and repair.
 	db, err = Open(db.dir, nil, nil, opts, nil)
 	require.NoError(t, err)
-	require.Equal(t, 1.0, prom_testutil.ToFloat64(db.head.metrics.walCorruptionsTotal))
+	require.InDelta(t, 1.0, prom_testutil.ToFloat64(db.head.metrics.walCorruptionsTotal), 0.01)
 	require.Less(t, len(expAfterRestart), len(allSamples))
 	verifySamples(expAfterRestart)
 
@@ -5909,7 +5910,7 @@ func TestOOOMmapCorruption(t *testing.T) {
 	// Restart does the replay and repair of m-map files.
 	db, err = Open(db.dir, nil, nil, opts, nil)
 	require.NoError(t, err)
-	require.Equal(t, 1.0, prom_testutil.ToFloat64(db.head.metrics.mmapChunkCorruptionTotal))
+	require.InDelta(t, 1.0, prom_testutil.ToFloat64(db.head.metrics.mmapChunkCorruptionTotal), 0.01)
 	require.Less(t, len(expInMmapChunks), len(allSamples))
 
 	// Since there is no WBL, only samples from m-map chunks comes in the query.
@@ -7063,6 +7064,7 @@ Outer:
 func requireEqualOOOSamples(t *testing.T, expectedSamples int, db *DB) {
 	require.Equal(t, float64(expectedSamples),
 		prom_testutil.ToFloat64(db.head.metrics.outOfOrderSamplesAppended.WithLabelValues(sampleMetricTypeFloat)),
+		0.01,
 		"number of ooo appended samples mismatch")
 }
 

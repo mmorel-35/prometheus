@@ -75,7 +75,11 @@ func TestDirLockerUsage(t *testing.T, open func(t *testing.T, data string, creat
 			}
 
 			locker, closer := open(t, tmpdir, !c.lockFileDisabled)
-			require.Equal(t, float64(c.expectedValue), prom_testutil.ToFloat64(locker.createdCleanly))
+			if c.expectedValue == 0 {
+				require.Zero(t, prom_testutil.ToFloat64(locker.createdCleanly))
+			} else {
+				require.InDelta(t, float64(c.expectedValue), prom_testutil.ToFloat64(locker.createdCleanly), 0.01)
+			}
 
 			// Close the client. This should delete the lockfile.
 			closer.Close()

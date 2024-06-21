@@ -100,7 +100,7 @@ func TestHTTPInvalidCode(t *testing.T) {
 	ctx := context.Background()
 	_, err = d.Refresh(ctx)
 	require.EqualError(t, err, "server returned HTTP status 400 Bad Request")
-	require.Equal(t, 1.0, getFailureCount(d.metrics.failuresCount))
+	require.InDelta(t, 1.0, getFailureCount(d.metrics.failuresCount), 0.01)
 }
 
 func TestHTTPInvalidFormat(t *testing.T) {

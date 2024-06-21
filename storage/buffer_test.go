@@ -216,7 +216,7 @@ func TestBufferedSeriesIterator(t *testing.T) {
 	sampleEq := func(ets int64, ev float64) {
 		ts, v := it.At()
 		require.Equal(t, ets, ts, "timestamp mismatch")
-		require.InDelta(t, ev, v, "value mismatch", 0.01)
+		require.InDelta(t, ev, v, 0.01, "value mismatch")
 	}
 	prevSampleEq := func(ets int64, ev float64, eok bool) {
 		s, ok := it.PeekBack(1)

@@ -925,8 +925,8 @@ func TestDBOutOfOrderTimeWindow(t *testing.T) {
 				expectedAppendedSamples = 1
 			}
 			m := gatherFamily(t, reg, "prometheus_agent_samples_appended_total")
-			require.Equal(t, expectedAppendedSamples, m.Metric[0].Counter.GetValue(), "agent wal mismatch of total appended samples")
-			require.Equal(t, expectedAppendedSamples, m.Metric[1].Counter.GetValue(), "agent wal mismatch of total appended histograms")
+			require.InDeltaf(t, expectedAppendedSamples, m.Metric[0].Counter.GetValue(), 0.01, "agent wal mismatch of total appended samples")
+			require.InDeltaf(t, expectedAppendedSamples, m.Metric[1].Counter.GetValue(), 0.01, "agent wal mismatch of total appended histograms")
 			require.NoError(t, s.Close())
 		})
 	}

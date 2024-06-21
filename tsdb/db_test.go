@@ -3357,7 +3357,7 @@ func TestOneCheckpointPerCompactCall(t *testing.T) {
 	require.Equal(t, 0, first)
 	require.Equal(t, 60, last)
 
-	require.Equal(t, 0.0, prom_testutil.ToFloat64(db.head.metrics.checkpointCreationTotal))
+	require.Zero(t, prom_testutil.ToFloat64(db.head.metrics.checkpointCreationTotal))
 	require.NoError(t, db.Compact(ctx))
 	require.Equal(t, 1.0, prom_testutil.ToFloat64(db.head.metrics.checkpointCreationTotal))
 
@@ -3415,7 +3415,7 @@ func TestOneCheckpointPerCompactCall(t *testing.T) {
 	require.Equal(t, 40, first)
 	require.Equal(t, 62, last)
 
-	require.Equal(t, 0.0, prom_testutil.ToFloat64(db.head.metrics.checkpointCreationTotal))
+	require.Zero(t, prom_testutil.ToFloat64(db.head.metrics.checkpointCreationTotal))
 	require.NoError(t, db.Compact(ctx))
 	require.Equal(t, 1.0, prom_testutil.ToFloat64(db.head.metrics.checkpointCreationTotal))
 
@@ -5814,7 +5814,7 @@ func TestWBLCorruption(t *testing.T) {
 	require.NoError(t, db.Close())
 	db, err = Open(db.dir, nil, nil, opts, nil)
 	require.NoError(t, err)
-	require.Equal(t, 0.0, prom_testutil.ToFloat64(db.head.metrics.walCorruptionsTotal))
+	require.Zero(t, prom_testutil.ToFloat64(db.head.metrics.walCorruptionsTotal))
 	verifySamples(expAfterRestart)
 }
 
@@ -5929,7 +5929,7 @@ func TestOOOMmapCorruption(t *testing.T) {
 	require.NoError(t, db.Close())
 	db, err = Open(db.dir, nil, nil, opts, nil)
 	require.NoError(t, err)
-	require.Equal(t, 0.0, prom_testutil.ToFloat64(db.head.metrics.mmapChunkCorruptionTotal))
+	require.Zero(t, prom_testutil.ToFloat64(db.head.metrics.mmapChunkCorruptionTotal))
 	verifySamples(expInMmapChunks)
 
 	// Restart again with the WBL, all samples should be present now.

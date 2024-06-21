@@ -129,7 +129,7 @@ func TestHTTPInvalidFormat(t *testing.T) {
 	ctx := context.Background()
 	_, err = d.Refresh(ctx)
 	require.EqualError(t, err, `unsupported content type "text/plain; charset=utf-8"`)
-	require.Equal(t, 1.0, getFailureCount(d.metrics.failuresCount))
+	require.InDelta(t, 1.0, getFailureCount(d.metrics.failuresCount), 0.01)
 }
 
 func getFailureCount(failuresCount prometheus.Counter) float64 {

@@ -1261,7 +1261,7 @@ func TestCancelCompactions(t *testing.T) {
 		db, err := open(tmpdir, log.NewNopLogger(), nil, DefaultOptions(), []int64{1, 2000}, nil)
 		require.NoError(t, err)
 		require.Len(t, db.Blocks(), 3, "initial block count mismatch")
-		require.Equal(t, 0.0, prom_testutil.ToFloat64(db.compactor.(*LeveledCompactor).metrics.Ran), "initial compaction counter mismatch")
+		require.Zero(t, prom_testutil.ToFloat64(db.compactor.(*LeveledCompactor).metrics.Ran), "initial compaction counter mismatch")
 		db.compactc <- struct{}{} // Trigger a compaction.
 		for prom_testutil.ToFloat64(db.compactor.(*LeveledCompactor).metrics.PopulatingBlocks) <= 0 {
 			time.Sleep(3 * time.Millisecond)
@@ -1280,7 +1280,7 @@ func TestCancelCompactions(t *testing.T) {
 		db, err := open(tmpdirCopy, log.NewNopLogger(), nil, DefaultOptions(), []int64{1, 2000}, nil)
 		require.NoError(t, err)
 		require.Len(t, db.Blocks(), 3, "initial block count mismatch")
-		require.Equal(t, 0.0, prom_testutil.ToFloat64(db.compactor.(*LeveledCompactor).metrics.Ran), "initial compaction counter mismatch")
+		require.Zero(t, prom_testutil.ToFloat64(db.compactor.(*LeveledCompactor).metrics.Ran), "initial compaction counter mismatch")
 		db.compactc <- struct{}{} // Trigger a compaction.
 
 		for prom_testutil.ToFloat64(db.compactor.(*LeveledCompactor).metrics.PopulatingBlocks) <= 0 {
@@ -1365,9 +1365,9 @@ func TestDeleteCompactionBlockAfterFailedReload(t *testing.T) {
 			require.Equal(t, expBlocks, len(actBlocks)-1)    // -1 to exclude the corrupted block.
 			require.NoError(t, os.RemoveAll(lastBlockIndex)) // Corrupt the block by removing the index file.
 
-			require.Equal(t, 0.0, prom_testutil.ToFloat64(db.metrics.reloadsFailed), "initial 'failed db reloadBlocks' count metrics mismatch")
-			require.Equal(t, 0.0, prom_testutil.ToFloat64(db.compactor.(*LeveledCompactor).metrics.Ran), "initial `compactions` count metric mismatch")
-			require.Equal(t, 0.0, prom_testutil.ToFloat64(db.metrics.compactionsFailed), "initial `compactions failed` count metric mismatch")
+			require.Zero(t, prom_testutil.ToFloat64(db.metrics.reloadsFailed), "initial 'failed db reloadBlocks' count metrics mismatch")
+			require.Zero(t, prom_testutil.ToFloat64(db.compactor.(*LeveledCompactor).metrics.Ran), "initial `compactions` count metric mismatch")
+			require.Zero(t, prom_testutil.ToFloat64(db.metrics.compactionsFailed), "initial `compactions failed` count metric mismatch")
 
 			// Do the compaction and check the metrics.
 			// Compaction should succeed, but the reloadBlocks should fail and

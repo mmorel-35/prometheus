@@ -284,7 +284,7 @@ func TestNoPanicAfterWALCorruption(t *testing.T) {
 		defer func() {
 			require.NoError(t, db.Close())
 		}()
-		require.Equal(t, 1.0, prom_testutil.ToFloat64(db.head.metrics.walCorruptionsTotal), "WAL corruption count mismatch")
+		require.InDeltaf(t, 1.0, prom_testutil.ToFloat64(db.head.metrics.walCorruptionsTotal), 0.01, "WAL corruption count mismatch")
 
 		querier, err := db.Querier(0, maxt)
 		require.NoError(t, err)
@@ -679,7 +679,7 @@ func TestDB_Snapshot(t *testing.T) {
 	}
 	require.NoError(t, seriesSet.Err())
 	require.Empty(t, seriesSet.Warnings())
-	require.Equal(t, 1000.0, sum)
+	require.InDelta(t, 1000.0, sum, 0.01)
 }
 
 // TestDB_Snapshot_ChunksOutsideOfCompactedRange ensures that a snapshot removes chunks samples
@@ -730,7 +730,7 @@ func TestDB_Snapshot_ChunksOutsideOfCompactedRange(t *testing.T) {
 	require.Empty(t, seriesSet.Warnings())
 
 	// Since we snapshotted with MaxTime - 10, so expect 10 less samples.
-	require.Equal(t, 1000.0-10, sum)
+	require.InDelta(t, 1000.0-10, sum, 0.01)
 }
 
 func TestDB_SnapshotWithDelete(t *testing.T) {
@@ -1536,7 +1536,7 @@ func TestRetentionDurationMetric(t *testing.T) {
 
 	expRetentionDuration := 1.0
 	actRetentionDuration := prom_testutil.ToFloat64(db.metrics.retentionDuration)
-	require.Equal(t, expRetentionDuration, actRetentionDuration, "metric retention duration mismatch")
+	require.InDeltaf(t, expRetentionDuration, actRetentionDuration, 0.01, "metric retention duration mismatch")
 }
 
 func TestSizeRetention(t *testing.T) {
@@ -2086,7 +2086,7 @@ func TestInitializeHeadTimestamp(t *testing.T) {
 		require.Equal(t, int64(15000), db.head.MaxTime())
 		require.True(t, db.head.initialized())
 		// Check that old series has been GCed.
-		require.Equal(t, 1.0, prom_testutil.ToFloat64(db.head.metrics.series))
+		require.InDelta(t, 1.0, prom_testutil.ToFloat64(db.head.metrics.series), 0.01)
 	})
 }
 
@@ -2626,7 +2626,7 @@ func TestDBReadOnly_FlushWAL(t *testing.T) {
 	}
 	require.NoError(t, seriesSet.Err())
 	require.Empty(t, seriesSet.Warnings())
-	require.Equal(t, 1000.0, sum)
+	require.InDelta(t, 1000.0, sum, 0.01)
 }
 
 func TestDBReadOnly_Querier_NoAlteration(t *testing.T) {
@@ -3359,7 +3359,7 @@ func TestOneCheckpointPerCompactCall(t *testing.T) {
 
 	require.Zero(t, prom_testutil.ToFloat64(db.head.metrics.checkpointCreationTotal))
 	require.NoError(t, db.Compact(ctx))
-	require.Equal(t, 1.0, prom_testutil.ToFloat64(db.head.metrics.checkpointCreationTotal))
+	require.InDelta(t, 1.0, prom_testutil.ToFloat64(db.head.metrics.checkpointCreationTotal), 0.01)
 
 	// As the data spans for 59 blocks, 58 go to disk and 1 remains in Head.
 	require.Len(t, db.Blocks(), 58)

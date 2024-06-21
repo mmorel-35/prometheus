@@ -3867,7 +3867,7 @@ func TestQuerierShouldNotFailIfOOOCompactionOccursAfterSelecting(t *testing.T) {
 		defer compactionComplete.Store(true)
 
 		require.NoError(t, db.CompactOOOHead(ctx))
-		require.Equal(t, float64(1), prom_testutil.ToFloat64(db.Head().metrics.chunksRemoved))
+		require.InDelta(t, float64(1), prom_testutil.ToFloat64(db.Head().metrics.chunksRemoved), 0.01)
 	}()
 
 	// Give CompactOOOHead time to start work.
@@ -7062,7 +7062,7 @@ Outer:
 }
 
 func requireEqualOOOSamples(t *testing.T, expectedSamples int, db *DB) {
-	require.Equal(t, float64(expectedSamples),
+	require.InDelta(t, float64(expectedSamples),
 		prom_testutil.ToFloat64(db.head.metrics.outOfOrderSamplesAppended.WithLabelValues(sampleMetricTypeFloat)),
 		0.01,
 		"number of ooo appended samples mismatch")

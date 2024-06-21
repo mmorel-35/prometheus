@@ -1373,9 +1373,9 @@ func TestDeleteCompactionBlockAfterFailedReload(t *testing.T) {
 			// Compaction should succeed, but the reloadBlocks should fail and
 			// the new block created from the compaction should be deleted.
 			require.Error(t, db.Compact(ctx))
-			require.Equal(t, 1.0, prom_testutil.ToFloat64(db.metrics.reloadsFailed), "'failed db reloadBlocks' count metrics mismatch")
-			require.Equal(t, 1.0, prom_testutil.ToFloat64(db.compactor.(*LeveledCompactor).metrics.Ran), "`compaction` count metric mismatch")
-			require.Equal(t, 1.0, prom_testutil.ToFloat64(db.metrics.compactionsFailed), "`compactions failed` count metric mismatch")
+			require.InDeltaf(t, 1.0, prom_testutil.ToFloat64(db.metrics.reloadsFailed), 0.01, "'failed db reloadBlocks' count metrics mismatch")
+			require.InDeltaf(t, 1.0, prom_testutil.ToFloat64(db.compactor.(*LeveledCompactor).metrics.Ran), 0.01, "`compaction` count metric mismatch")
+			require.InDeltaf(t, 1.0, prom_testutil.ToFloat64(db.metrics.compactionsFailed), 0.01, "`compactions failed` count metric mismatch")
 
 			actBlocks, err = blockDirs(db.Dir())
 			require.NoError(t, err)

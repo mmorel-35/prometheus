@@ -3640,7 +3640,7 @@ func TestScrapeLoopSeriesAddedDuplicates(t *testing.T) {
 	err = sl.metrics.targetScrapeSampleDuplicate.Write(&metric)
 	require.NoError(t, err)
 	value := metric.GetCounter().GetValue()
-	require.Equal(t, 4.0, value)
+	require.InDelta(t, 4.0, value, 0.01)
 }
 
 // This tests running a full scrape loop and checking that the scrape option

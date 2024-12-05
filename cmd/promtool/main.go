@@ -85,6 +85,7 @@ var (
 	lintRulesOptions = []string{lintOptionAll, lintOptionDuplicateRules, lintOptionNone}
 	// Same as lintRulesOptions, but including scrape config linting options as well.
 	lintConfigOptions = append(append([]string{}, lintRulesOptions...), lintOptionTooLongScrapeInterval)
+	userAgent         = version.ComponentUserAgent("promtool")
 )
 
 func main() {
@@ -328,7 +329,7 @@ func main() {
 			kingpin.Fatalf("Failed to load HTTP config file: %v", err)
 		}
 
-		httpRoundTripper, err = promconfig.NewRoundTripperFromConfig(*httpConfig, "promtool", promconfig.WithUserAgent("promtool/"+version.Version))
+		httpRoundTripper, err = promconfig.NewRoundTripperFromConfig(*httpConfig, "promtool", promconfig.WithUserAgent(userAgent))
 		if err != nil {
 			kingpin.Fatalf("Failed to create a new HTTP round tripper: %v", err)
 		}

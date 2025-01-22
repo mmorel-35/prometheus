@@ -85,8 +85,8 @@ func (h *Head) loadWAL(r *wlog.Reader, syms *labels.SymbolTable, multiRef map[ch
 
 	defer func() {
 		// For CorruptionErr ensure to terminate all workers before exiting.
-		_, ok := err.(*wlog.CorruptionErr)
-		if ok || seriesCreationErr != nil {
+		var cerr *wlog.CorruptionErr
+		if errors.As(err, &cerr) || seriesCreationErr != nil {
 			for i := 0; i < concurrency; i++ {
 				processors[i].closeAndDrain()
 			}
@@ -670,8 +670,8 @@ func (h *Head) loadWBL(r *wlog.Reader, syms *labels.SymbolTable, multiRef map[ch
 	defer func() {
 		// For CorruptionErr ensure to terminate all workers before exiting.
 		// We also wrap it to identify OOO WBL corruption.
-		_, ok := err.(*wlog.CorruptionErr)
-		if ok {
+		var cerr *wlog.CorruptionErr
+		if errors.As(err, &cerr) {
 			err = &errLoadWbl{err: err}
 			for i := 0; i < concurrency; i++ {
 				processors[i].closeAndDrain()
@@ -904,15 +904,11 @@ type errLoadWbl struct {
 	err error
 }
 
-func (e errLoadWbl) Error() string {
+func (e *errLoadWbl) Error() string {
 	return e.err.Error()
 }
 
-func (e errLoadWbl) Cause() error {
-	return e.err
-}
-
-func (e errLoadWbl) Unwrap() error {
+func (e *errLoadWbl) Unwrap() error {
 	return e.err
 }
 

@@ -63,9 +63,6 @@ issues:
     - path: _test.go
       linters:
         - errcheck
-    - path: "tsdb/head_wal.go"
-      linters:
-        - errorlint
     - linters:
         - godot
       source: "^// ==="

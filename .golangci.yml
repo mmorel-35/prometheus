@@ -14,6 +14,7 @@ linters:
     - godot
     - gofumpt
     - goimports
+    - govet
     - loggercheck
     - misspell
     - nilnesserr
@@ -110,6 +111,9 @@ linters-settings:
     local-prefixes: github.com/prometheus/prometheus
   gofumpt:
     extra-rules: true
+  govet:
+    enable:
+      - shadow
   perfsprint:
      # Optimizes `fmt.Errorf`.
     errorf: true

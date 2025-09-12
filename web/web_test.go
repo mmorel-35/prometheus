@@ -157,12 +157,16 @@ func TestReadyAndHealthy(t *testing.T) {
 		cleanupTestResponse(t, resp)
 	}
 
-	resp, err = http.Post(baseURL+"/api/v1/admin/tsdb/snapshot", "", strings.NewReader(""))
+	req, err = http.NewRequestWithContext(context.Background(), http.MethodPost, baseURL+"/api/v1/admin/tsdb/snapshot", strings.NewReader(""))
+	require.NoError(t, err)
+	resp, err = http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
 	cleanupTestResponse(t, resp)
 
-	resp, err = http.Post(baseURL+"/api/v1/admin/tsdb/delete_series", "", strings.NewReader("{}"))
+	req, err = http.NewRequestWithContext(context.Background(), http.MethodPost, baseURL+"/api/v1/admin/tsdb/delete_series", strings.NewReader("{}"))
+	require.NoError(t, err)
+	resp, err = http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
 	cleanupTestResponse(t, resp)

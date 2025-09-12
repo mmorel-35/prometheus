@@ -73,8 +73,8 @@ func (p *queryLogTest) waitForPrometheus() error {
 	var err error
 	for range 20 {
 		var r *http.Response
-		req, reqErr := http.NewRequestWithContext(context.Background(), http.MethodGet, fmt.Sprintf("http://%s:%d%s/-/ready", p.host, p.port, p.prefix), nil)
-		if reqErr == nil {
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, fmt.Sprintf("http://%s:%d%s/-/ready", p.host, p.port, p.prefix), http.NoBody)
+		if err == nil {
 			if r, err = http.DefaultClient.Do(req); err == nil && r.StatusCode == http.StatusOK {
 				break
 			}
@@ -103,24 +103,24 @@ func (p *queryLogTest) setQueryLog(t *testing.T, queryLogFile string) {
 func (p *queryLogTest) query(t *testing.T) {
 	switch p.origin {
 	case apiOrigin:
-		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, fmt.Sprintf(
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, fmt.Sprintf(
 			"http://%s:%d%s/api/v1/query_range?step=5&start=0&end=3600&query=%s",
 			p.host,
 			p.port,
 			p.prefix,
 			url.QueryEscape("query_with_api"),
-		), nil)
+		), http.NoBody)
 		require.NoError(t, err)
 		r, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
 		require.Equal(t, 200, r.StatusCode)
 	case consoleOrigin:
-		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, fmt.Sprintf(
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, fmt.Sprintf(
 			"http://%s:%d%s/consoles/test.html",
 			p.host,
 			p.port,
 			p.prefix,
-		), nil)
+		), http.NoBody)
 		require.NoError(t, err)
 		r, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
@@ -129,7 +129,7 @@ func (p *queryLogTest) query(t *testing.T) {
 		// Poll the /api/v1/rules endpoint until a new rule evaluation is detected.
 		var lastEvalTime time.Time
 		for {
-			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, fmt.Sprintf("http://%s:%d/api/v1/rules", p.host, p.port), nil)
+			req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, fmt.Sprintf("http://%s:%d/api/v1/rules", p.host, p.port), nil)
 			require.NoError(t, err)
 			r, err := http.DefaultClient.Do(req)
 			require.NoError(t, err)

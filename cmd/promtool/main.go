@@ -561,7 +561,7 @@ func CheckServerStatus(serverURL *url.URL, checkEndpoint string, roundTripper ht
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, config.Address, nil)
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, config.Address, http.NoBody)
 	if err != nil {
 		return err
 	}

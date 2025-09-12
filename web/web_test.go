@@ -125,14 +125,14 @@ func TestReadyAndHealthy(t *testing.T) {
 
 	baseURL := "http://localhost" + port
 
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, baseURL+"/-/healthy", nil)
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, baseURL+"/-/healthy", http.NoBody)
 	require.NoError(t, err)
 	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	cleanupTestResponse(t, resp)
 
-	req, err = http.NewRequestWithContext(context.Background(), http.MethodHead, baseURL+"/-/healthy", nil)
+	req, err = http.NewRequestWithContext(t.Context(), http.MethodHead, baseURL+"/-/healthy", http.NoBody)
 	require.NoError(t, err)
 	resp, err = http.DefaultClient.Do(req)
 	require.NoError(t, err)
@@ -142,14 +142,14 @@ func TestReadyAndHealthy(t *testing.T) {
 	for _, u := range []string{
 		baseURL + "/-/ready",
 	} {
-		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, u, nil)
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, u, http.NoBody)
 		require.NoError(t, err)
 		resp, err = http.DefaultClient.Do(req)
 		require.NoError(t, err)
 		require.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
 		cleanupTestResponse(t, resp)
 
-		req, err = http.NewRequestWithContext(context.Background(), http.MethodHead, u, nil)
+		req, err = http.NewRequestWithContext(t.Context(), http.MethodHead, u, http.NoBody)
 		require.NoError(t, err)
 		resp, err = http.DefaultClient.Do(req)
 		require.NoError(t, err)
@@ -157,14 +157,14 @@ func TestReadyAndHealthy(t *testing.T) {
 		cleanupTestResponse(t, resp)
 	}
 
-	req, err = http.NewRequestWithContext(context.Background(), http.MethodPost, baseURL+"/api/v1/admin/tsdb/snapshot", strings.NewReader(""))
+	req, err = http.NewRequestWithContext(t.Context(), http.MethodPost, baseURL+"/api/v1/admin/tsdb/snapshot", strings.NewReader(""))
 	require.NoError(t, err)
 	resp, err = http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
 	cleanupTestResponse(t, resp)
 
-	req, err = http.NewRequestWithContext(context.Background(), http.MethodPost, baseURL+"/api/v1/admin/tsdb/delete_series", strings.NewReader("{}"))
+	req, err = http.NewRequestWithContext(t.Context(), http.MethodPost, baseURL+"/api/v1/admin/tsdb/delete_series", strings.NewReader("{}"))
 	require.NoError(t, err)
 	resp, err = http.DefaultClient.Do(req)
 	require.NoError(t, err)
@@ -178,24 +178,32 @@ func TestReadyAndHealthy(t *testing.T) {
 		baseURL + "/-/healthy",
 		baseURL + "/-/ready",
 	} {
-		resp, err = http.Get(u)
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, u, http.NoBody)
+		require.NoError(t, err)
+		resp, err = http.DefaultClient.Do(req)
 		require.NoError(t, err)
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 		cleanupTestResponse(t, resp)
 
-		resp, err = http.Head(u)
+		req, err = http.NewRequestWithContext(t.Context(), http.MethodHead, u, http.NoBody)
+		require.NoError(t, err)
+		resp, err = http.DefaultClient.Do(req)
 		require.NoError(t, err)
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 		cleanupTestResponse(t, resp)
 	}
 
-	resp, err = http.Post(baseURL+"/api/v1/admin/tsdb/snapshot", "", strings.NewReader(""))
+	req, err = http.NewRequestWithContext(t.Context(), http.MethodPost, baseURL+"/api/v1/admin/tsdb/snapshot", http.NoBody)
+	require.NoError(t, err)
+	resp, err = http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	cleanupSnapshot(t, dbDir, resp)
 	cleanupTestResponse(t, resp)
 
-	resp, err = http.Post(baseURL+"/api/v1/admin/tsdb/delete_series?match[]=up", "", nil)
+	req, err = http.NewRequestWithContext(t.Context(), http.MethodPost, baseURL+"/api/v1/admin/tsdb/delete_series?match[]=up", http.NoBody)
+	require.NoError(t, err)
+	resp, err = http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusNoContent, resp.StatusCode)
 	cleanupTestResponse(t, resp)
@@ -255,22 +263,30 @@ func TestRoutePrefix(t *testing.T) {
 
 	baseURL := "http://localhost" + port
 
-	resp, err := http.Get(baseURL + opts.RoutePrefix + "/-/healthy")
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, baseURL+opts.RoutePrefix+"/-/healthy", http.NoBody)
+	require.NoError(t, err)
+	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	cleanupTestResponse(t, resp)
 
-	resp, err = http.Get(baseURL + opts.RoutePrefix + "/-/ready")
+	req, err = http.NewRequestWithContext(t.Context(), http.MethodGet, baseURL+opts.RoutePrefix+"/-/ready", http.NoBody)
+	require.NoError(t, err)
+	resp, err = http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
 	cleanupTestResponse(t, resp)
 
-	resp, err = http.Post(baseURL+opts.RoutePrefix+"/api/v1/admin/tsdb/snapshot", "", strings.NewReader(""))
+	req, err = http.NewRequestWithContext(t.Context(), http.MethodPost, baseURL+opts.RoutePrefix+"/api/v1/admin/tsdb/snapshot", http.NoBody)
+	require.NoError(t, err)
+	resp, err = http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
 	cleanupTestResponse(t, resp)
 
-	resp, err = http.Post(baseURL+opts.RoutePrefix+"/api/v1/admin/tsdb/delete_series", "", strings.NewReader("{}"))
+	req, err = http.NewRequestWithContext(t.Context(), http.MethodPost, baseURL+opts.RoutePrefix+"/api/v1/admin/tsdb/delete_series", strings.NewReader("{}"))
+	require.NoError(t, err)
+	resp, err = http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
 	cleanupTestResponse(t, resp)
@@ -278,23 +294,31 @@ func TestRoutePrefix(t *testing.T) {
 	// Set to ready.
 	webHandler.SetReady(Ready)
 
-	resp, err = http.Get(baseURL + opts.RoutePrefix + "/-/healthy")
+	req, err = http.NewRequestWithContext(t.Context(), http.MethodGet, baseURL+opts.RoutePrefix+"/-/healthy", http.NoBody)
+	require.NoError(t, err)
+	resp, err = http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	cleanupTestResponse(t, resp)
 
-	resp, err = http.Get(baseURL + opts.RoutePrefix + "/-/ready")
+	req, err = http.NewRequestWithContext(t.Context(), http.MethodGet, baseURL+opts.RoutePrefix+"/-/ready", http.NoBody)
+	require.NoError(t, err)
+	resp, err = http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	cleanupTestResponse(t, resp)
 
-	resp, err = http.Post(baseURL+opts.RoutePrefix+"/api/v1/admin/tsdb/snapshot", "", strings.NewReader(""))
+	req, err = http.NewRequestWithContext(t.Context(), http.MethodPost, baseURL+opts.RoutePrefix+"/api/v1/admin/tsdb/snapshot", http.NoBody)
+	require.NoError(t, err)
+	resp, err = http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	cleanupSnapshot(t, dbDir, resp)
 	cleanupTestResponse(t, resp)
 
-	resp, err = http.Post(baseURL+opts.RoutePrefix+"/api/v1/admin/tsdb/delete_series?match[]=up", "", nil)
+	req, err = http.NewRequestWithContext(t.Context(), http.MethodPost, baseURL+opts.RoutePrefix+"/api/v1/admin/tsdb/delete_series?match[]=up", http.NoBody)
+	require.NoError(t, err)
+	resp, err = http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusNoContent, resp.StatusCode)
 	cleanupTestResponse(t, resp)
@@ -327,7 +351,7 @@ func TestDebugHandler(t *testing.T) {
 
 		w := httptest.NewRecorder()
 
-		req, err := http.NewRequest(http.MethodGet, tc.url, nil)
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, tc.url, http.NoBody)
 
 		require.NoError(t, err)
 
@@ -351,7 +375,7 @@ func TestHTTPMetrics(t *testing.T) {
 		t.Helper()
 		w := httptest.NewRecorder()
 
-		req, err := http.NewRequest(http.MethodGet, "/-/ready", nil)
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "/-/ready", http.NoBody)
 		require.NoError(t, err)
 
 		handler.router.ServeHTTP(w, req)
@@ -504,7 +528,9 @@ func TestHandleMultipleQuitRequests(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			<-start
-			resp, err := http.Post(baseURL+"/-/quit", "", strings.NewReader(""))
+			req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, baseURL+"/-/quit", http.NoBody)
+			require.NoError(t, err)
+			resp, err := http.DefaultClient.Do(req)
 			require.NoError(t, err)
 			require.Equal(t, http.StatusOK, resp.StatusCode)
 		}()
@@ -593,7 +619,7 @@ func TestAgentAPIEndPoints(t *testing.T) {
 		"/admin/tsdb/snapshot":         {http.MethodPost, http.MethodPut},
 	} {
 		for _, m := range methods {
-			req, err := http.NewRequest(m, baseURL+path, nil)
+			req, err := http.NewRequestWithContext(t.Context(), m, baseURL+path, http.NoBody)
 			require.NoError(t, err)
 			resp, err := http.DefaultClient.Do(req)
 			require.NoError(t, err)
@@ -614,7 +640,7 @@ func TestAgentAPIEndPoints(t *testing.T) {
 		"/status/flags":       {http.MethodGet},
 	} {
 		for _, m := range methods {
-			req, err := http.NewRequest(m, baseURL+path, nil)
+			req, err := http.NewRequestWithContext(t.Context(), m, baseURL+path, http.NoBody)
 			require.NoError(t, err)
 			resp, err := http.DefaultClient.Do(req)
 			require.NoError(t, err)
@@ -714,12 +740,16 @@ func TestMultipleListenAddresses(t *testing.T) {
 	for _, port := range []string{port1, port2} {
 		baseURL := "http://localhost" + port
 
-		resp, err := http.Get(baseURL + "/-/healthy")
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, baseURL+"/-/healthy", http.NoBody)
+		require.NoError(t, err)
+		resp, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 		cleanupTestResponse(t, resp)
 
-		resp, err = http.Get(baseURL + "/-/ready")
+		req, err = http.NewRequestWithContext(t.Context(), http.MethodGet, baseURL+"/-/ready", http.NoBody)
+		require.NoError(t, err)
+		resp, err = http.DefaultClient.Do(req)
 		require.NoError(t, err)
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 		cleanupTestResponse(t, resp)

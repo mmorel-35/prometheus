@@ -655,10 +655,10 @@ func TestRwProtoMsgFlagParser(t *testing.T) {
 func reloadPrometheusConfig(t *testing.T, reloadURL string) {
 	t.Helper()
 
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, reloadURL, nil)
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, reloadURL, http.NoBody)
 	require.NoError(t, err, "Failed to create reload request")
 	req.Header.Set("Content-Type", "text/plain")
-	
+
 	r, err := http.DefaultClient.Do(req)
 	require.NoError(t, err, "Failed to reload Prometheus")
 	require.Equal(t, http.StatusOK, r.StatusCode, "Unexpected status code when reloading Prometheus")
@@ -779,8 +779,8 @@ global:
 				)
 				// Wait for the /metrics endpoint to be ready.
 				require.Eventually(t, func() bool {
-					req, reqErr := http.NewRequestWithContext(context.Background(), http.MethodGet, fmt.Sprintf("http://127.0.0.1:%d/metrics", port), nil)
-					if reqErr != nil {
+					req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, fmt.Sprintf("http://127.0.0.1:%d/metrics", port), http.NoBody)
+					if err != nil {
 						return false
 					}
 					r, err = http.DefaultClient.Do(req)
@@ -854,8 +854,8 @@ scrape_configs:
 			require.NoError(t, prom.Start())
 
 			require.Eventually(t, func() bool {
-				req, reqErr := http.NewRequestWithContext(context.Background(), http.MethodGet, fmt.Sprintf("http://127.0.0.1:%d/metrics", port), nil)
-				if reqErr != nil {
+				req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, fmt.Sprintf("http://127.0.0.1:%d/metrics", port), http.NoBody)
+				if err != nil {
 					return false
 				}
 				r, err := http.DefaultClient.Do(req)
@@ -941,8 +941,8 @@ remote_write:
 	require.NoError(t, prom.Start())
 
 	require.Eventually(t, func() bool {
-		req, reqErr := http.NewRequestWithContext(context.Background(), http.MethodGet, fmt.Sprintf("http://127.0.0.1:%d/metrics", port), nil)
-		if reqErr != nil {
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, fmt.Sprintf("http://127.0.0.1:%d/metrics", port), http.NoBody)
+		if err != nil {
 			return false
 		}
 		r, err := http.DefaultClient.Do(req)

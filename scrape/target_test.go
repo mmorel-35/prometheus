@@ -162,7 +162,7 @@ func TestNewHTTPBearerToken(t *testing.T) {
 	}
 	c, err := config_util.NewClientFromConfig(cfg, "test")
 	require.NoError(t, err)
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, server.URL, nil)
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, server.URL, http.NoBody)
 	require.NoError(t, err)
 	_, err = c.Do(req)
 	require.NoError(t, err)
@@ -185,7 +185,7 @@ func TestNewHTTPBearerTokenFile(t *testing.T) {
 	}
 	c, err := config_util.NewClientFromConfig(cfg, "test")
 	require.NoError(t, err)
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, server.URL, nil)
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, server.URL, http.NoBody)
 	require.NoError(t, err)
 	_, err = c.Do(req)
 	require.NoError(t, err)
@@ -212,7 +212,7 @@ func TestNewHTTPBasicAuth(t *testing.T) {
 	}
 	c, err := config_util.NewClientFromConfig(cfg, "test")
 	require.NoError(t, err)
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, server.URL, nil)
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, server.URL, http.NoBody)
 	require.NoError(t, err)
 	_, err = c.Do(req)
 	require.NoError(t, err)
@@ -238,7 +238,7 @@ func TestNewHTTPCACert(t *testing.T) {
 	}
 	c, err := config_util.NewClientFromConfig(cfg, "test")
 	require.NoError(t, err)
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, server.URL, nil)
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, server.URL, http.NoBody)
 	require.NoError(t, err)
 	_, err = c.Do(req)
 	require.NoError(t, err)
@@ -269,7 +269,7 @@ func TestNewHTTPClientCert(t *testing.T) {
 	}
 	c, err := config_util.NewClientFromConfig(cfg, "test")
 	require.NoError(t, err)
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, server.URL, nil)
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, server.URL, http.NoBody)
 	require.NoError(t, err)
 	_, err = c.Do(req)
 	require.NoError(t, err)
@@ -296,7 +296,7 @@ func TestNewHTTPWithServerName(t *testing.T) {
 	}
 	c, err := config_util.NewClientFromConfig(cfg, "test")
 	require.NoError(t, err)
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, server.URL, nil)
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, server.URL, http.NoBody)
 	require.NoError(t, err)
 	_, err = c.Do(req)
 	require.NoError(t, err)
@@ -323,7 +323,7 @@ func TestNewHTTPWithBadServerName(t *testing.T) {
 	}
 	c, err := config_util.NewClientFromConfig(cfg, "test")
 	require.NoError(t, err)
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, server.URL, nil)
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, server.URL, http.NoBody)
 	require.NoError(t, err)
 	_, err = c.Do(req)
 	require.Error(t, err)

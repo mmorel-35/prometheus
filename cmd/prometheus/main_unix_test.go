@@ -16,6 +16,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -56,15 +57,18 @@ Loop:
 	for range 10 {
 		// error=nil means prometheus has started, so we can send the interrupt
 		// signal and wait for the graceful shutdown.
-		if _, err := http.Get(url); err == nil {
-			startedOk = true
-			prom.Process.Signal(os.Interrupt)
-			select {
-			case stoppedErr = <-done:
+		req, reqErr := http.NewRequestWithContext(context.Background(), http.MethodGet, url, nil)
+		if reqErr == nil {
+			if _, err := http.DefaultClient.Do(req); err == nil {
+				startedOk = true
+				prom.Process.Signal(os.Interrupt)
+				select {
+				case stoppedErr = <-done:
+					break Loop
+				case <-time.After(10 * time.Second):
+				}
 				break Loop
-			case <-time.After(10 * time.Second):
 			}
-			break Loop
 		}
 		time.Sleep(500 * time.Millisecond)
 	}

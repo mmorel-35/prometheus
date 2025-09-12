@@ -125,12 +125,16 @@ func TestReadyAndHealthy(t *testing.T) {
 
 	baseURL := "http://localhost" + port
 
-	resp, err := http.Get(baseURL + "/-/healthy")
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, baseURL+"/-/healthy", nil)
+	require.NoError(t, err)
+	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	cleanupTestResponse(t, resp)
 
-	resp, err = http.Head(baseURL + "/-/healthy")
+	req, err = http.NewRequestWithContext(context.Background(), http.MethodHead, baseURL+"/-/healthy", nil)
+	require.NoError(t, err)
+	resp, err = http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	cleanupTestResponse(t, resp)
@@ -138,12 +142,16 @@ func TestReadyAndHealthy(t *testing.T) {
 	for _, u := range []string{
 		baseURL + "/-/ready",
 	} {
-		resp, err = http.Get(u)
+		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, u, nil)
+		require.NoError(t, err)
+		resp, err = http.DefaultClient.Do(req)
 		require.NoError(t, err)
 		require.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
 		cleanupTestResponse(t, resp)
 
-		resp, err = http.Head(u)
+		req, err = http.NewRequestWithContext(context.Background(), http.MethodHead, u, nil)
+		require.NoError(t, err)
+		resp, err = http.DefaultClient.Do(req)
 		require.NoError(t, err)
 		require.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
 		cleanupTestResponse(t, resp)

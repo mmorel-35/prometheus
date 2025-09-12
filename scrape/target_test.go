@@ -14,6 +14,7 @@
 package scrape
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
@@ -161,7 +162,9 @@ func TestNewHTTPBearerToken(t *testing.T) {
 	}
 	c, err := config_util.NewClientFromConfig(cfg, "test")
 	require.NoError(t, err)
-	_, err = c.Get(server.URL)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, server.URL, nil)
+	require.NoError(t, err)
+	_, err = c.Do(req)
 	require.NoError(t, err)
 }
 
@@ -182,7 +185,9 @@ func TestNewHTTPBearerTokenFile(t *testing.T) {
 	}
 	c, err := config_util.NewClientFromConfig(cfg, "test")
 	require.NoError(t, err)
-	_, err = c.Get(server.URL)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, server.URL, nil)
+	require.NoError(t, err)
+	_, err = c.Do(req)
 	require.NoError(t, err)
 }
 
@@ -207,7 +212,9 @@ func TestNewHTTPBasicAuth(t *testing.T) {
 	}
 	c, err := config_util.NewClientFromConfig(cfg, "test")
 	require.NoError(t, err)
-	_, err = c.Get(server.URL)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, server.URL, nil)
+	require.NoError(t, err)
+	_, err = c.Do(req)
 	require.NoError(t, err)
 }
 
@@ -231,7 +238,9 @@ func TestNewHTTPCACert(t *testing.T) {
 	}
 	c, err := config_util.NewClientFromConfig(cfg, "test")
 	require.NoError(t, err)
-	_, err = c.Get(server.URL)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, server.URL, nil)
+	require.NoError(t, err)
+	_, err = c.Do(req)
 	require.NoError(t, err)
 }
 

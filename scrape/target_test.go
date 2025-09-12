@@ -269,7 +269,9 @@ func TestNewHTTPClientCert(t *testing.T) {
 	}
 	c, err := config_util.NewClientFromConfig(cfg, "test")
 	require.NoError(t, err)
-	_, err = c.Get(server.URL)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, server.URL, nil)
+	require.NoError(t, err)
+	_, err = c.Do(req)
 	require.NoError(t, err)
 }
 
@@ -294,7 +296,9 @@ func TestNewHTTPWithServerName(t *testing.T) {
 	}
 	c, err := config_util.NewClientFromConfig(cfg, "test")
 	require.NoError(t, err)
-	_, err = c.Get(server.URL)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, server.URL, nil)
+	require.NoError(t, err)
+	_, err = c.Do(req)
 	require.NoError(t, err)
 }
 
@@ -319,7 +323,9 @@ func TestNewHTTPWithBadServerName(t *testing.T) {
 	}
 	c, err := config_util.NewClientFromConfig(cfg, "test")
 	require.NoError(t, err)
-	_, err = c.Get(server.URL)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, server.URL, nil)
+	require.NoError(t, err)
+	_, err = c.Do(req)
 	require.Error(t, err)
 }
 

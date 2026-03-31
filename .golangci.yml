@@ -179,6 +179,9 @@ linters:
       # Disable optimization of concat loop.
       concat-loop: false
     revive:
+      enable-all-rules: false
+      enable-default-rules: true
+      max-open-files: 2048
       # By default, revive will enable only the linting rules that are named in the configuration file.
       # So, it's needed to explicitly enable all required rules here.
       rules:
@@ -218,6 +221,7 @@ linters:
             - "preserveScope"
         - name: time-naming
         - name: unexported-return
+        - name: unnecessary-format
         - name: unreachable-code
         - name: unused-parameter
         - name: unused-receiver
